@@ -1,0 +1,779 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CPU Scheduling Algorithm Demonstration</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+            color: #333;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .algorithm-selector {
+            margin-bottom: 30px;
+        }
+        .selector-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+        .algo-btn {
+            padding: 10px 15px;
+            background-color: #ecf0f1;
+            border: 2px solid #bdc3c7;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: bold;
+        }
+        .algo-btn.active {
+            background-color: #3498db;
+            color: white;
+            border-color: #2980b9;
+        }
+        .algo-description {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        .process-inputs {
+            margin-bottom: 30px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        th, td {
+            padding: 12px;
+            text-align: center;
+            border: 1px solid #ddd;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        input[type="number"] {
+            width: 70px;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .control-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+        .control-btn {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background-color 0.3s;
+        }
+        .add-btn {
+            background-color: #2ecc71;
+            color: white;
+        }
+        .add-btn:hover {
+            background-color: #27ae60;
+        }
+        .demo-btn {
+            background-color: #e74c3c;
+            color: white;
+        }
+        .demo-btn:hover {
+            background-color: #c0392b;
+        }
+        .reset-btn {
+            background-color: #95a5a6;
+            color: white;
+        }
+        .reset-btn:hover {
+            background-color: #7f8c8d;
+        }
+        .quantum-input {
+            margin-top: 20px;
+            display: none;
+        }
+        .quantum-input label {
+            margin-right: 10px;
+        }
+        .visualization {
+            margin-top: 30px;
+        }
+        .timeline {
+            height: 50px;
+            background-color: #f8f9fa;
+            margin-bottom: 20px;
+            position: relative;
+            border: 1px solid #ddd;
+        }
+        .timeline-segment {
+            position: absolute;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+        .console {
+            background-color: #2c3e50;
+            color: #ecf0f1;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: monospace;
+            height: 150px;
+            overflow-y: auto;
+        }
+        .serial-controls {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        .serial-btn {
+            padding: 10px 15px;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .serial-btn:hover {
+            background-color: #2980b9;
+        }
+        .status {
+            padding: 15px;
+            margin-top: 20px;
+            border-radius: 5px;
+            text-align: center;
+            background-color: #f8f9fa;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>CPU Scheduling Algorithm Demonstration</h1>
+        
+        <div class="algorithm-selector">
+            <h2>Select Algorithm</h2>
+            <div class="selector-buttons">
+                <div class="algo-btn" id="sjf-non" onclick="selectAlgorithm('sjf-non')">SJF Non-Preemptive</div>
+                <div class="algo-btn" id="sjf-pre" onclick="selectAlgorithm('sjf-pre')">SJF Preemptive</div>
+                <div class="algo-btn" id="rr" onclick="selectAlgorithm('rr')">Round Robin</div>
+            </div>
+            
+            <div class="algo-description" id="algorithm-description">
+                Please select an algorithm to see its description and start configuration.
+            </div>
+            
+            <div class="quantum-input" id="quantum-input">
+                <label for="time-quantum">Time Quantum (ms):</label>
+                <input type="number" id="time-quantum" min="100" max="2000" value="500" step="100">
+            </div>
+        </div>
+        
+        <div class="process-inputs">
+            <h2>Process Configuration</h2>
+            <p>Configure up to 5 processes (one for each LED)</p>
+            
+            <table>
+                <thead>
+                    <tr>
+                        <th>Process ID</th>
+                        <th>Arrival Time (ms)</th>
+                        <th>Burst Time (ms)</th>
+                    </tr>
+                </thead>
+                <tbody id="process-table">
+                    <tr>
+                        <td>P1</td>
+                        <td><input type="number" class="arrival-time" min="0" value="0"></td>
+                        <td><input type="number" class="burst-time" min="100" max="5000" value="1000" step="100"></td>
+                    </tr>
+                </tbody>
+            </table>
+            
+            <div class="control-buttons">
+                <button class="control-btn add-btn" id="add-process" onclick="addProcess()">Add Process</button>
+                <button class="control-btn demo-btn" id="start-demo" onclick="startDemonstration()">Start Demonstration</button>
+                <button class="control-btn reset-btn" onclick="resetDemo()">Reset</button>
+            </div>
+        </div>
+        
+        <div class="visualization">
+            <h2>Visualization</h2>
+            <div class="timeline" id="timeline">
+                <!-- Timeline segments will be added here -->
+            </div>
+            
+            <h3>Arduino Console</h3>
+            <div class="console" id="console">
+                > System ready. Configure algorithm and processes, then click "Start Demonstration".
+            </div>
+            
+            <div class="serial-controls">
+                <button class="serial-btn" onclick="connectToArduino()">Connect to Arduino</button>
+                <button class="serial-btn" onclick="sendToArduino()">Send to Arduino</button>
+            </div>
+            
+            <div class="status" id="status">
+                Not connected to Arduino
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let selectedAlgorithm = '';
+        let processes = [];
+        let serialPort = null;
+        let writer = null;
+        let reader = null;
+        let timeline = [];
+        
+        // Algorithm descriptions
+        const algorithmDescriptions = {
+            'sjf-non': 'Shortest Job First (Non-Preemptive): Processes are executed in order of burst time. Once a process starts, it runs to completion.',
+            'sjf-pre': 'Shortest Job First (Preemptive): If a new process arrives with a shorter burst time than the remaining time of the current process, the current process is preempted.',
+            'rr': 'Round Robin: Each process gets a small unit of CPU time (time quantum). After this time has elapsed, the process is preempted and added to the end of the ready queue.'
+        };
+        
+        // Select algorithm
+        function selectAlgorithm(algorithm) {
+            selectedAlgorithm = algorithm;
+            
+            // Update UI
+            document.querySelectorAll('.algo-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            document.getElementById(algorithm).classList.add('active');
+            
+            // Update description
+            document.getElementById('algorithm-description').textContent = algorithmDescriptions[algorithm];
+            
+            // Show/hide time quantum input
+            if (algorithm === 'rr') {
+                document.getElementById('quantum-input').style.display = 'block';
+            } else {
+                document.getElementById('quantum-input').style.display = 'none';
+            }
+            
+            logToConsole(`Selected algorithm: ${getAlgorithmName(algorithm)}`);
+        }
+        
+        // Get full algorithm name
+        function getAlgorithmName(algorithm) {
+            switch(algorithm) {
+                case 'sjf-non': return 'Shortest Job First (Non-Preemptive)';
+                case 'sjf-pre': return 'Shortest Job First (Preemptive)';
+                case 'rr': return 'Round Robin';
+                default: return '';
+            }
+        }
+        
+        // Add process to table
+        function addProcess() {
+            const rows = document.querySelectorAll('#process-table tr');
+            
+            if (rows.length >= 5) {
+                alert('Maximum 5 processes allowed (one for each LED)');
+                return;
+            }
+            
+            const newRow = document.createElement('tr');
+            newRow.innerHTML = `
+                <td>P${rows.length + 1}</td>
+                <td><input type="number" class="arrival-time" min="0" value="0"></td>
+                <td><input type="number" class="burst-time" min="100" max="5000" value="1000" step="100"></td>
+            `;
+            
+            document.getElementById('process-table').appendChild(newRow);
+        }
+        
+        // Reset demo
+        function resetDemo() {
+            // Clear process table except first row
+            const rows = document.querySelectorAll('#process-table tr');
+            for (let i = rows.length - 1; i > 0; i--) {
+                rows[i].remove();
+            }
+            
+            // Reset first row
+            document.querySelector('.arrival-time').value = 0;
+            document.querySelector('.burst-time').value = 1000;
+            
+            // Reset algorithm selection
+            document.querySelectorAll('.algo-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            selectedAlgorithm = '';
+            document.getElementById('algorithm-description').textContent = 'Please select an algorithm to see its description and start configuration.';
+            document.getElementById('quantum-input').style.display = 'none';
+            
+            // Clear timeline
+            document.getElementById('timeline').innerHTML = '';
+            
+            // Clear console
+            document.getElementById('console').innerHTML = '> System reset. Configure algorithm and processes, then click "Start Demonstration".';
+        }
+        
+        // Log to console
+        function logToConsole(message) {
+            const console = document.getElementById('console');
+            console.innerHTML += `<br>> ${message}`;
+            console.scrollTop = console.scrollHeight;
+        }
+        
+        // Start demonstration
+        function startDemonstration() {
+            if (!selectedAlgorithm) {
+                alert('Please select an algorithm first');
+                return;
+            }
+            
+            // Collect process data
+            processes = [];
+            const rows = document.querySelectorAll('#process-table tr');
+            
+            rows.forEach((row, index) => {
+                const arrivalTime = parseInt(row.querySelector('.arrival-time').value);
+                const burstTime = parseInt(row.querySelector('.burst-time').value);
+                
+                if (isNaN(arrivalTime) || isNaN(burstTime)) {
+                    alert('Please enter valid numbers for all processes');
+                    return;
+                }
+                
+                processes.push({
+                    id: index + 1,
+                    arrivalTime: arrivalTime,
+                    burstTime: burstTime,
+                    remainingTime: burstTime
+                });
+            });
+            
+            // Run selected algorithm
+            let timeQuantum = 0;
+            if (selectedAlgorithm === 'rr') {
+                timeQuantum = parseInt(document.getElementById('time-quantum').value);
+                if (isNaN(timeQuantum) || timeQuantum < 100) {
+                    alert('Please enter a valid time quantum (minimum 100ms)');
+                    return;
+                }
+            }
+            
+            logToConsole(`Starting demonstration with ${processes.length} processes`);
+            
+            // Calculate schedule based on selected algorithm
+            switch(selectedAlgorithm) {
+                case 'sjf-non':
+                    timeline = sjfNonPreemptive(processes);
+                    break;
+                case 'sjf-pre':
+                    timeline = sjfPreemptive(processes);
+                    break;
+                case 'rr':
+                    timeline = roundRobin(processes, timeQuantum);
+                    break;
+            }
+            
+            // Visualize timeline
+            visualizeTimeline(timeline);
+            
+            // Prepare data for Arduino
+            logToConsole('Scheduling calculation complete. Ready to send to Arduino.');
+        }
+        
+        // SJF Non-Preemptive algorithm
+        function sjfNonPreemptive(processes) {
+            // Sort processes by arrival time
+            const sortedProcesses = [...processes].sort((a, b) => a.arrivalTime - b.arrivalTime);
+            
+            const timeline = [];
+            const completed = new Array(sortedProcesses.length).fill(false);
+            let currentTime = 0;
+            let completedCount = 0;
+            
+            while (completedCount < sortedProcesses.length) {
+                let found = false;
+                let minBurstIndex = -1;
+                let minBurst = Number.MAX_VALUE;
+                
+                // Find shortest job that has arrived and not completed
+                for (let i = 0; i < sortedProcesses.length; i++) {
+                    if (!completed[i] && sortedProcesses[i].arrivalTime <= currentTime && sortedProcesses[i].burstTime < minBurst) {
+                        minBurst = sortedProcesses[i].burstTime;
+                        minBurstIndex = i;
+                        found = true;
+                    }
+                }
+                
+                if (found) {
+                    // Add to timeline
+                    timeline.push({
+                        processId: sortedProcesses[minBurstIndex].id,
+                        startTime: currentTime,
+                        endTime: currentTime + sortedProcesses[minBurstIndex].burstTime
+                    });
+                    
+                    // Update current time and mark as completed
+                    currentTime += sortedProcesses[minBurstIndex].burstTime;
+                    completed[minBurstIndex] = true;
+                    completedCount++;
+                } else {
+                    // No eligible process, advance time to next arrival
+                    let nextArrival = Number.MAX_VALUE;
+                    for (let i = 0; i < sortedProcesses.length; i++) {
+                        if (!completed[i] && sortedProcesses[i].arrivalTime > currentTime && sortedProcesses[i].arrivalTime < nextArrival) {
+                            nextArrival = sortedProcesses[i].arrivalTime;
+                        }
+                    }
+                    currentTime = nextArrival;
+                }
+            }
+            
+            return timeline;
+        }
+        
+        // SJF Preemptive algorithm (SRTF)
+        function sjfPreemptive(processes) {
+            const timeline = [];
+            const n = processes.length;
+            const processesClone = processes.map(p => ({...p}));
+            
+            let currentTime = 0;
+            let completedCount = 0;
+            let currentProcess = -1;
+            let minRemTime = Number.MAX_VALUE;
+            let timeStart = 0;
+            
+            while (completedCount < n) {
+                // Find process with min remaining time
+                minRemTime = Number.MAX_VALUE;
+                let found = false;
+                
+                for (let i = 0; i < n; i++) {
+                    if (processesClone[i].remainingTime > 0 && 
+                        processesClone[i].arrivalTime <= currentTime &&
+                        processesClone[i].remainingTime < minRemTime) {
+                        minRemTime = processesClone[i].remainingTime;
+                        currentProcess = i;
+                        found = true;
+                    }
+                }
+                
+                if (!found) {
+                    // No eligible process, find next arrival
+                    let nextArrival = Number.MAX_VALUE;
+                    for (let i = 0; i < n; i++) {
+                        if (processesClone[i].remainingTime > 0 && 
+                            processesClone[i].arrivalTime < nextArrival) {
+                            nextArrival = processesClone[i].arrivalTime;
+                        }
+                    }
+                    currentTime = nextArrival;
+                    continue;
+                }
+                
+                // Start of new process or segment
+                timeStart = currentTime;
+                
+                // Find how long this process will run
+                let runUntil = currentTime + processesClone[currentProcess].remainingTime;
+                let preempted = false;
+                
+                // Check if any process with shorter remaining time arrives before completion
+                for (let i = 0; i < n; i++) {
+                    if (i !== currentProcess && 
+                        processesClone[i].remainingTime > 0 && 
+                        processesClone[i].arrivalTime > currentTime &&
+                        processesClone[i].arrivalTime < runUntil) {
+                        
+                        // A process will arrive that might preempt current process
+                        // Need to check if it has shorter remaining time
+                        const elapsedTime = processesClone[i].arrivalTime - currentTime;
+                        const remainingAfterElapsed = processesClone[currentProcess].remainingTime - elapsedTime;
+                        
+                        if (processesClone[i].burstTime < remainingAfterElapsed) {
+                            // Preemption will occur
+                            runUntil = processesClone[i].arrivalTime;
+                            preempted = true;
+                            break;
+                        }
+                    }
+                }
+                
+                // Add segment to timeline
+                const executionTime = runUntil - currentTime;
+                timeline.push({
+                    processId: processesClone[currentProcess].id,
+                    startTime: timeStart,
+                    endTime: runUntil
+                });
+                
+                // Update process remaining time
+                processesClone[currentProcess].remainingTime -= executionTime;
+                
+                // Update current time
+                currentTime = runUntil;
+                
+                // Check if process completed
+                if (processesClone[currentProcess].remainingTime === 0) {
+                    completedCount++;
+                }
+            }
+            
+            return timeline;
+        }
+        
+        // Round Robin algorithm
+        function roundRobin(processes, timeQuantum) {
+            const timeline = [];
+            const n = processes.length;
+            const processesClone = processes.map(p => ({...p}));
+            
+            // Queue for ready processes
+            const readyQueue = [];
+            
+            let currentTime = 0;
+            let completedCount = 0;
+            
+            // Sort processes by arrival time
+            processesClone.sort((a, b) => a.arrivalTime - b.arrivalTime);
+            
+            // Initialize ready queue with first process(es)
+            let i = 0;
+            while (i < n && processesClone[i].arrivalTime <= currentTime) {
+                readyQueue.push(i);
+                i++;
+            }
+            
+            while (completedCount < n) {
+                if (readyQueue.length === 0) {
+                    // No process in ready queue, find next arrival
+                    let nextArrival = Number.MAX_VALUE;
+                    for (let j = 0; j < n; j++) {
+                        if (processesClone[j].remainingTime > 0 && 
+                            processesClone[j].arrivalTime < nextArrival) {
+                            nextArrival = processesClone[j].arrivalTime;
+                        }
+                    }
+                    currentTime = nextArrival;
+                    
+                    // Add newly arrived processes to ready queue
+                    while (i < n && processesClone[i].arrivalTime <= currentTime) {
+                        readyQueue.push(i);
+                        i++;
+                    }
+                    continue;
+                }
+                
+                // Get next process from ready queue
+                const processIndex = readyQueue.shift();
+                
+                // Calculate execution time for this quantum
+                const executeTime = Math.min(timeQuantum, processesClone[processIndex].remainingTime);
+                
+                // Add to timeline
+                timeline.push({
+                    processId: processesClone[processIndex].id,
+                    startTime: currentTime,
+                    endTime: currentTime + executeTime
+                });
+                
+                // Update current time
+                currentTime += executeTime;
+                
+                // Update remaining time
+                processesClone[processIndex].remainingTime -= executeTime;
+                
+                // Check for newly arrived processes
+                while (i < n && processesClone[i].arrivalTime <= currentTime) {
+                    readyQueue.push(i);
+                    i++;
+                }
+                
+                // Check if process completed
+                if (processesClone[processIndex].remainingTime === 0) {
+                    completedCount++;
+                } else {
+                    // Process still has remaining time, add back to ready queue
+                    readyQueue.push(processIndex);
+                }
+            }
+            
+            return timeline;
+        }
+        
+        // Visualize timeline
+        function visualizeTimeline(timeline) {
+            const timelineEl = document.getElementById('timeline');
+            timelineEl.innerHTML = '';
+            
+            // Find total time span
+            const endTime = timeline.reduce((max, segment) => Math.max(max, segment.endTime), 0);
+            
+            // Create timeline segments
+            timeline.forEach(segment => {
+                const width = ((segment.endTime - segment.startTime) / endTime) * 100;
+                const left = (segment.startTime / endTime) * 100;
+                
+                const segmentEl = document.createElement('div');
+                segmentEl.className = 'timeline-segment';
+                segmentEl.style.width = `${width}%`;
+                segmentEl.style.left = `${left}%`;
+                segmentEl.style.backgroundColor = getProcessColor(segment.processId);
+                segmentEl.textContent = `P${segment.processId}`;
+                
+                timelineEl.appendChild(segmentEl);
+            });
+            
+            logToConsole('Visualization updated');
+        }
+        
+        // Get process color
+        function getProcessColor(id) {
+            const colors = [
+                '#e74c3c', // LED 1 - Red
+                '#2ecc71', // LED 2 - Green
+                '#3498db', // LED 3 - Blue
+                '#f39c12', // LED 4 - Yellow
+                '#9b59b6'  // LED 5 - Purple
+            ];
+            
+            return colors[(id - 1) % colors.length];
+        }
+        
+        // Connect to Arduino via Web Serial API
+        async function connectToArduino() {
+            try {
+                // Request port
+                const port = await navigator.serial.requestPort();
+                await port.open({ baudRate: 9600 });
+                
+                // Set up writer
+                const textEncoder = new TextEncoder();
+                writer = port.writable.getWriter();
+                
+                // Set up reader
+                const textDecoder = new TextDecoder();
+                reader = port.readable.getReader();
+                
+                serialPort = port;
+                
+                document.getElementById('status').textContent = 'Connected to Arduino';
+                document.getElementById('status').style.backgroundColor = '#d5f5e3';
+                
+                logToConsole('Connected to Arduino');
+                
+                // Start reading from Arduino
+                readFromArduino();
+                
+            } catch (error) {
+                console.error('Error connecting to Arduino:', error);
+                logToConsole(`Error connecting to Arduino: ${error.message}`);
+                document.getElementById('status').textContent = 'Failed to connect to Arduino';
+                document.getElementById('status').style.backgroundColor = '#fadbd8';
+            }
+        }
+        
+        // Read from Arduino
+        async function readFromArduino() {
+            try {
+                while (true) {
+                    const { value, done } = await reader.read();
+                    if (done) {
+                        break;
+                    }
+                    const text = new TextDecoder().decode(value);
+                    logToConsole(`Arduino: ${text}`);
+                }
+            } catch (error) {
+                console.error('Error reading from Arduino:', error);
+                logToConsole(`Error reading from Arduino: ${error.message}`);
+            } finally {
+                reader.releaseLock();
+            }
+        }
+        
+        // Send data to Arduino
+        async function sendToArduino() {
+            if (!serialPort) {
+                alert('Please connect to Arduino first');
+                return;
+            }
+            
+            if (!selectedAlgorithm || timeline.length === 0) {
+                alert('Please configure and start demonstration first');
+                return;
+            }
+            
+            try {
+                // Format data for Arduino
+                // Format: ALGO:TYPE|DATA
+                // - SJF-NON: SJF:0|P1,100,200;P2,300,400...
+                // - SJF-PRE: SJF:1|P1,100,200;P2,300,400...
+                // - RR: RR:timeQuantum|P1,100,200;P2,300,400...
+                
+                let dataString = '';
+                
+                switch(selectedAlgorithm) {
+                    case 'sjf-non':
+                        dataString = 'SJF:0|';
+                        break;
+                    case 'sjf-pre':
+                        dataString = 'SJF:1|';
+                        break;
+                    case 'rr':
+                        const timeQuantum = document.getElementById('time-quantum').value;
+                        dataString = `RR:${timeQuantum}|`;
+                        break;
+                }
+                
+                // Add timeline segments
+                timeline.forEach((segment, index) => {
+                    dataString += `P${segment.processId},${segment.startTime},${segment.endTime}`;
+                    if (index < timeline.length - 1) {
+                        dataString += ';';
+                    }
+                });
+                
+                // Send to Arduino
+                const encoder = new TextEncoder();
+                await writer.write(encoder.encode(dataString + '\n'));
+                
+                logToConsole(`Sent to Arduino: ${dataString}`);
+                
+            } catch (error) {
+                console.error('Error sending to Arduino:', error);
+                logToConsole(`Error sending to Arduino: ${error.message}`);
+            }
+        }
+        
+        // Check if Web Serial API is available
+        if (!navigator.serial) {
+            document.getElementById('status').textContent = 'Web Serial API not supported. Please use Chrome or Edge.';
+            document.getElementById('status').style.backgroundColor = '#fadbd8';
+        }
+    </script>
+</body>
+</html>
